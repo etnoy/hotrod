@@ -58,7 +58,7 @@ The build tool never flashes hardware. Native tests cover framing, controller li
 
 ## Flash the ESP8266
 
-**The following is a manual bench procedure, not a verified IDVN pad/pin guide.** This project has no confirmed PCB photograph or programming-header map. Confirm the exact board, flash capacity, power arrangement, and recovery access before using these commands. The configured build currently assumes **4 MiB flash, DIO, 40 MHz**.
+**The following is a manual bench procedure, not an electrically verified IDVN pad/pin guide.** The [hardware photo inspection](docs/DOCUMENTATION.md#hardware-photo-inspection) identifies accessible pads labeled `RxD`, `TxD`, `BOOT_WiFi`, `RST_WiFi`, `RST_MCU`, `GND`, and `+3,3V`. Their routing, UART direction and bench-power arrangement still need measurement. Confirm the exact board, flash capacity, power arrangement, and recovery access before using these commands. The configured build currently assumes **4 MiB flash, DIO, 40 MHz**.
 
 ### Prepare the hardware
 
@@ -160,6 +160,7 @@ Restore normal boot straps and wiring as above. The controller's apparent automa
 ## Research and repository contents
 
 - [Investigation notebook](docs/DOCUMENTATION.md#firmware-investigation-notebook): evidence, addresses, hypotheses, and progress.
+- [Photo inspection and programming pads](docs/DOCUMENTATION.md#hardware-photo-inspection): hardware observations, labeled access points, and checks before flashing.
 - [Protocol specification](docs/DOCUMENTATION.md#controller-protocol): frame format, payload layouts, and remaining uncertainties.
 - [Firmware documentation](firmware/README.md): API, configuration, architecture, and validation.
 - [Home Assistant example](examples/home-assistant.yaml): optional local REST integration.

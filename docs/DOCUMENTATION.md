@@ -7,6 +7,7 @@ Consolidated reference for the replacement firmware. Contents:
 3. [STM32 departure-timer analysis](#stm32-departure-timer-analysis)
 4. [Firmware investigation notebook](#firmware-investigation-notebook)
 5. [MQTT and controller-extension handover log](#mqtt-and-controller-extension-handover-log)
+6. [Hardware photo inspection](#hardware-photo-inspection)
 
 
 ---
@@ -783,3 +784,126 @@ User chose read-only STM32 research first (no hardware yet). See [timer analysis
 ### Checkpoint 6: controller analysis continued
 
 Details in [timer analysis](#stm32-departure-timer-analysis). Confirmed by disassembly: slot index = `2*(timer-1)+outlet` (0 left, 1 right) for slots 0-5; slots 6/7 are the per-outlet 30-minute "start now" slots (state 1), toggled by the 3 s button press via `0x080090ce` and ending with relay off `0x0800a5f6(outlet,0)` after `(now-start+30000)/60000` minutes; flags bit0 = enabled, bit7 = uninitialised (previous note called it one-shot — wrong); times are binary hour/minute. Temperature: I2C sensor at 0x90 (LM75-style), offset/filter into float `0x20000390` which the departure curve uses (board sensor, calibration unverified). Controller looks like STM32F0 with ~8 KiB RAM and a file store; ~6 KiB free flash if 64 KiB part (unconfirmed). Install path would be the ESP driving the ST ROM bootloader, as the stock app does. Still static analysis only. Next steps: (1) emulate the scheduler/panel code (Unicorn is available in `analysis/.emulator-venv`) to validate slot semantics and a candidate patch; (2) identify free flash/hooks (dispatcher table `0x08005ccc`); (3) confirm the sensor offset sign and relay-output function `0x0800a5f6`; (4) design ESP-side commands. No hardware writes before a full flash backup.
+
+## Hardware photo inspection
+
+The photos show accessible programming pads, but their routing and a safe
+bench-power arrangement still require electrical verification.
+
+### Relay ratings and discoloration
+
+The fitted relays are marked **SCHRACK RTH34012WG, 12 VDC coil, 16 A / 250 VAC**.
+This is a component marking, not independent confirmation of the entire product's
+continuous-current rating or installation conditions. Operating within a product
+rating does not exclude a deteriorated contact or connection; conversely,
+yellowing around the supply does not prove load-path overheating or overloading.
+The load current passes through the relay/contact wiring, not through the
+low-power AC/DC output, so these two possible heat sources must be distinguished.
+
+### What the photos establish
+
+- The Wi-Fi module at **IC4** is marked **ESP8266MOD / AI-THINKER**, with an
+  ESP-12E/F-style footprint, shield and PCB antenna. The exact module variant
+  and fitted flash capacity are not readable from the shield label.
+- The product sticker reads **IDVN, hw1.0.1**. Keep this physical label separate
+  from the firmware-reported hardware-version constant 104; their relationship
+  is not established. The PCB also carries `MC2017 V1.4` and `G4640B` markings.
+- **T1 is a MYRRA 47155 encapsulated AC/DC supply**, marked input 100–240 VAC,
+  output **15 VDC, 5 W**, positive pin 7 / negative pin 9. The manufacturer's
+  [power-supply catalog](https://myrra.com/electronic-transformers/) agrees with
+  the part/output rating. This is evidence of a separate AC/DC supply, rather
+  than evidence for a simple capacitive-dropper assumption. It does not verify
+  isolation integrity or every connection on the assembled board.
+- The rear controller at IC1 is a 48-lead device, but its part marking is not
+  legible. The exact STM32 identity, flash size and protection remain unknown.
+- There are accessible labeled programming/test pads. Their labels are confirmed
+  visually; net routing and signal direction are **not continuity-verified**.
+
+### Preferred solder points
+
+The row reads left to right:
+
+```text
+GND  SC+  [gap]  RST_MCU  RST_WiFi  BOOT_MCU  BOOT_WiFi
+RxD  TxD  GND  TxD2  +3,3V  RTC_SYNC  RTC_IN  RTC_OUT
+```
+
+The accessible pads are a better place for thin temporary wires or a suitable
+pogo fixture than the ESP module's small castellated joints. Do not infer a
+standard header pitch or drill the pads from the photographs. A glossy coating
+is visible; determine whether the chosen pads need local coating removal before
+soldering, and provide strain relief without covering the antenna.
+
+| Pad marking | Expected use | Check before connection |
+| --- | --- | --- |
+| `GND` (beside `TxD`) | Programmer/supply common logic ground | Continuity to module GND; not protective earth |
+| `+3,3V` | Candidate regulated logic-supply connection | Continuity to ESP VCC and qualify external-power/backfeed arrangement |
+| `RxD` | Candidate ESP UART0 receive, GPIO3 | Verify module RX; then adapter TX goes here |
+| `TxD` | Candidate ESP UART0 transmit, GPIO1 | Verify module TX; then adapter RX goes here |
+| `BOOT_WiFi` | Candidate ESP GPIO0 downloader strap | Verify to GPIO0 and check for other drivers before pulling low |
+| `RST_WiFi` | Candidate ESP active-low reset | Verify reset routing/polarity and check for other drivers |
+| `RST_MCU` | Candidate controller reset to suppress UART contention/recovery | Verify controller reset net and safe assertion method |
+
+`RxD` and `TxD` could be named from either processor's perspective: **the ESP's
+actual RX/TX nets decide the connections**. If the pad labels use the other
+perspective, reverse the proposed pad assignment. Series resistance may be
+present, so use measured resistance/net tracing rather than treating absence of
+a continuity beep as proof that two points are unrelated.
+
+`TxD2` is not established as the ESP programming UART. Leave it, `SC+`,
+`BOOT_MCU`, and the RTC pads unconnected for ESP flashing. The separate short
+row marked `+3,3V RST SWD SWC GND` is consistent with controller debug access,
+not an ESP UART header. In particular, do not use its generic `RST` as an
+assumed ESP reset. GPIO4/5-to-controller reset/boot routing remains unverified.
+
+### Conditional bench sequence
+
+The pads make UART read/write access **likely practical** without removing the
+ESP shield or connecting directly to the SPI flash. They do not yet make this a
+verified wiring recipe. Resolve the discoloration question first, then:
+
+1. With the unit fully disconnected from mains and external load wiring, have
+   absence of hazardous voltage verified before touching it. Stored charge can
+   remain. Do not connect a USB programmer while mains is connected.
+2. On the unpowered board, verify the candidate ground, power, RX, TX, GPIO0,
+   ESP reset and MCU reset nets. Check for driven reset/boot nets before
+   grounding them; do not short a push-pull output to ground.
+3. Qualify a bench-power arrangement. Use regulated **3.3 V** and **3.3 V UART
+   levels**, never 5 V on ESP signals. A supply capable of at least 500 mA is a
+   sensible starting point for the ESP, with adequate board-wide capacity and
+   current limiting. Many USB-UART adapters' 3.3 V outputs are inadequate.
+   Directly injecting the board's 3.3 V rail may backfeed its regulator or power
+   other circuitry; establish whether isolation of that rail is required before
+   connecting it. Do not parallel the adapter's power output with a bench supply.
+   Do not put 15 V from T1 on the ESP supply pad.
+4. Keep the STM32 from driving the shared UART or restarting/reflashing the ESP.
+   A verified, safely asserted `RST_MCU` is the candidate method, but confirm
+   that it actually releases the UART and leaves ESP enable/straps valid. If
+   not, qualify another isolation method. A series resistor alone is not proof
+   that simultaneous UART drivers are safe.
+5. Wire common ground and crossed UART signals as verified above. Leave
+   programmer DTR/RTS disconnected for manual entry. Keep ESP EN high, GPIO15
+   low and GPIO2 pulled high (not hard-wired to VCC). Hold verified GPIO0 low,
+   pulse verified ESP reset low then release it, and enter the ROM downloader.
+   These are Espressif boot requirements, not measured IDVN pad behavior.
+6. Run `flash_id`, then read **the detected full flash size twice** and compare
+   the files before any write. The existing 4 MiB build is an assumption based
+   on the stock image, not a capacity measurement. Use the conditional commands
+   in [the main README](../README.md#identify-and-back-up) only when it matches.
+7. Configure SSID/password/API token and rebuild. At inspection time,
+   `build/idvn-bridge.json` reports `local_config_present: false` and
+   `hardware_tested: false`: the existing binary is not a configured deployment
+   image. For a qualified matching device, write the combined image at **0x0**,
+   verify it, and retain the full stock backup. Do not erase the whole flash.
+8. Power down before removing programming connections/restoring normal wiring.
+   Release GPIO0 for normal boot. Disconnect programmer TX/RX before releasing
+   the controller reset. Perform the README's first-boot/liveness/recovery tests
+   under a validated power arrangement before considering load operation.
+
+Espressif references: [boot selection](https://docs.espressif.com/projects/esptool/en/latest/esp8266/advanced-topics/boot-mode-selection.html),
+[supply design](https://documentation.espressif.com/esp8266_hardware_design_guidelines_en.html),
+and [programming troubleshooting](https://docs.espressif.com/projects/esptool/en/latest/esp8266/troubleshooting.html).
+
+No new firmware was built or installed for this photo inspection; no programmer
+was connected and no electrical measurements were made. Physical flash backup,
+power qualification, continuity mapping and hardware firmware tests remain open.
