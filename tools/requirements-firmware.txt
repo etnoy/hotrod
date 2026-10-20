@@ -1,0 +1,3 @@
+platformio==6.1.18
+# Optional independent stock-code verification. Use a current Python/pip for arm64 wheels.
+unicorn==2.1.4

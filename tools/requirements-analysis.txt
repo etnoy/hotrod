@@ -1,0 +1,2 @@
+# Xtensa support requires the prerelease; 5.x does not support this target.
+capstone==6.0.0a11

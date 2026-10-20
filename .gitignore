@@ -1,0 +1,53 @@
+# Local vendor inputs and reverse-engineering workspace.
+# Includes APK copies, extracted assets/firmware, third-party source references,
+# disassembly, previous analysis, toolchains, virtualenvs, and generated reports.
+/original/
+/analysis/
+
+# Firmware and native build outputs. Configured images can contain credentials.
+/build/
+**/.pio/
+*.apk
+*.apks
+*.xapk
+*.aab
+*.dex
+*.bin
+*.elf
+*.hex
+*.uf2
+*.map
+*.o
+*.a
+*.so
+*.dylib
+
+# Private device configuration and local secrets. Keep example templates tracked.
+/firmware/include/local_config.h
+.env
+.env.*
+!.env.example
+secrets.yaml
+secrets.yml
+*.pem
+*.key
+
+# Python environments and caches.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Logs, editor leftovers, and OS metadata.
+*.log
+*.swp
+*.swo
+*~
+.idea/
+.DS_Store
+._*
+Thumbs.db

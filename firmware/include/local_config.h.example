@@ -1,0 +1,12 @@
+#pragma once
+
+// Copy to local_config.h (ignored by Git). These values are embedded in the image.
+// Use a dedicated 2.4 GHz network. No AP or provisioning portal is started.
+#define GARO_WIFI_SSID "your-network"
+#define GARO_WIFI_PASSWORD "your-network-password"
+#define GARO_API_TOKEN "replace-with-a-long-random-local-api-token"
+#define GARO_HOSTNAME "garo-idvn"
+
+// Stock startup drives GPIO4 high and GPIO5 low. Verify the board wiring first.
+#define GARO_IDLE_GPIO4 1
+#define GARO_IDLE_GPIO5 0

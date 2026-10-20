@@ -1,0 +1,56 @@
+# Optional configuration fragment. Merge with existing sections; do not replace
+# your configuration.yaml. Adjust URLs in secrets.yaml for the bridge's LAN IP.
+# secrets.yaml:
+#   garo_data_url: http://192.168.1.80/v1/data
+#   garo_mode_url: http://192.168.1.80/v1/mode
+#   garo_time_url: http://192.168.1.80/v1/time
+#   garo_authorization: Bearer YOUR_CONFIGURED_API_TOKEN
+
+sensor:
+  - platform: rest
+    name: GARO left configured mode
+    unique_id: garo_idvn_left_configured_mode
+    resource: !secret garo_data_url
+    headers:
+      Authorization: !secret garo_authorization
+    scan_interval: 15
+    timeout: 3
+    value_template: "{{ ['departure', 'reduction', 'timer'][value_json.mode.left] }}"
+    json_attributes:
+      - mode
+      - working
+      - departure
+      - reduction
+      - time
+      - version
+      - state_age_ms
+
+rest_command:
+  garo_set_mode:
+    url: !secret garo_mode_url
+    method: post
+    headers:
+      Authorization: !secret garo_authorization
+    content_type: application/json
+    # Supply the complete JSON object as the action's payload parameter.
+    # Example: '{"left":0,"right":2,"timers":1,"period":0}'
+    payload: "{{ payload }}"
+    timeout: 3
+
+  garo_sync_local_time:
+    url: !secret garo_time_url
+    method: post
+    headers:
+      Authorization: !secret garo_authorization
+    content_type: application/json
+    payload: >-
+      {% set t = now() %}
+      {"year":{{ t.year % 100 }},"month":{{ t.month }},"day":{{ t.day }},
+      "weekDay":{{ t.isoweekday() }},"hours":{{ t.hour }},
+      "minutes":{{ t.minute }},"seconds":{{ t.second }}}
+    timeout: 3
+
+# These actions return 202 when QUEUED. To verify acceptance, obtain the operation
+# ID from the response, then GET /v1/operation?id=N until a terminal status.
+# The CLI in tools/idvn.py already performs that polling. A REST sensor showing
+# a mode is configured state; it is not evidence of a measured relay position.
