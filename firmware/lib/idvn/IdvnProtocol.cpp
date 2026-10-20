@@ -1,7 +1,7 @@
-#include "GaroProtocol.h"
+#include "IdvnProtocol.h"
 #include <string.h>
 
-namespace garo {
+namespace idvn {
 uint16_t crc16(const uint8_t* bytes, size_t length, uint16_t initial) {
   uint16_t crc = initial;
   for (size_t i = 0; i < length; ++i) {
@@ -269,4 +269,4 @@ void Controller::accept(const Frame& frame, uint32_t now) {
   }
   pendingUser_=false;
 }
-}  // namespace garo
+}  // namespace idvn

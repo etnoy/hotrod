@@ -1,18 +1,18 @@
 # Optional configuration fragment. Merge with existing sections; do not replace
 # your configuration.yaml. Adjust URLs in secrets.yaml for the bridge's LAN IP.
 # secrets.yaml:
-#   garo_data_url: http://192.168.1.80/v1/data
-#   garo_mode_url: http://192.168.1.80/v1/mode
-#   garo_time_url: http://192.168.1.80/v1/time
-#   garo_authorization: Bearer YOUR_CONFIGURED_API_TOKEN
+#   idvn_data_url: http://192.168.1.80/v1/data
+#   idvn_mode_url: http://192.168.1.80/v1/mode
+#   idvn_time_url: http://192.168.1.80/v1/time
+#   idvn_authorization: Bearer YOUR_CONFIGURED_API_TOKEN
 
 sensor:
   - platform: rest
-    name: GARO left configured mode
-    unique_id: garo_idvn_left_configured_mode
-    resource: !secret garo_data_url
+    name: IDVN left configured mode
+    unique_id: idvn_left_configured_mode
+    resource: !secret idvn_data_url
     headers:
-      Authorization: !secret garo_authorization
+      Authorization: !secret idvn_authorization
     scan_interval: 15
     timeout: 3
     value_template: "{{ ['departure', 'reduction', 'timer'][value_json.mode.left] }}"
@@ -26,22 +26,22 @@ sensor:
       - state_age_ms
 
 rest_command:
-  garo_set_mode:
-    url: !secret garo_mode_url
+  idvn_set_mode:
+    url: !secret idvn_mode_url
     method: post
     headers:
-      Authorization: !secret garo_authorization
+      Authorization: !secret idvn_authorization
     content_type: application/json
     # Supply the complete JSON object as the action's payload parameter.
     # Example: '{"left":0,"right":2,"timers":1,"period":0}'
     payload: "{{ payload }}"
     timeout: 3
 
-  garo_sync_local_time:
-    url: !secret garo_time_url
+  idvn_sync_local_time:
+    url: !secret idvn_time_url
     method: post
     headers:
-      Authorization: !secret garo_authorization
+      Authorization: !secret idvn_authorization
     content_type: application/json
     payload: >-
       {% set t = now() %}

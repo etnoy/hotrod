@@ -45,11 +45,11 @@ def main():
     env.setdefault('PLATFORMIO_CORE_DIR',str(ROOT/'analysis/platformio'))
     subprocess.run([sys.executable,'-m','platformio','run','--project-dir',str(ROOT/'firmware')],
                    env=env,check=True)
-    source=ROOT/'firmware/.pio/build/garo_esp8266/firmware.bin'
+    source=ROOT/'firmware/.pio/build/idvn_esp8266/firmware.bin'
     data=source.read_bytes()
     checks=verify(data)
     output=ROOT/'build'; output.mkdir(exist_ok=True)
-    target=output/'garo-idvn-bridge.bin'
+    target=output/'idvn-bridge.bin'
     shutil.copyfile(source,target)
     sources={str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest()
         for path in sorted((ROOT/'firmware').rglob('*'))
@@ -59,7 +59,7 @@ def main():
         'status':'development build; board/flash layout and electrical wiring require hardware validation',
         'platform':'espressif8266@4.2.1','arduino_core':'3.1.2','arduino_json':'6.21.5',
         'integrity':checks,'sources':sources}
-    (output/'garo-idvn-bridge.json').write_text(json.dumps(manifest,indent=2)+'\n')
+    (output/'idvn-bridge.json').write_text(json.dumps(manifest,indent=2)+'\n')
     print(f'Exported {target}: {len(data)} bytes, SHA-256 {manifest["sha256"]}')
     print('Bootloader XOR, normalized application XOR, and Arduino CRC32 verified. No upload performed.')
 

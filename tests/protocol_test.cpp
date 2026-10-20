@@ -1,10 +1,10 @@
-#include "GaroProtocol.h"
+#include "IdvnProtocol.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <vector>
 
-using namespace garo;
+using namespace idvn;
 using Bytes=std::vector<uint8_t>;
 
 static Bytes frame(uint8_t command, const Bytes& payload={}) {

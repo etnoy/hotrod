@@ -1,4 +1,4 @@
-# GARO IDVN ESP8266 bridge
+# IDVN ESP8266 bridge
 
 Source-built replacement for the ESP8266 application. It joins an existing Wi-Fi network and exposes the controller's settings through a small local HTTP API. The STM32 controller continues to run the original firmware and manage the heater.
 
@@ -7,11 +7,11 @@ Source-built replacement for the ESP8266 application. It joins an existing Wi-Fi
 ## Implemented
 
 - ESP8266 station mode only; DHCP and automatic reconnect. No normal AP, web UI, cloud dependency, or captive portal.
-- Normal GARO UART frames, CRC, state decoding, boot confirmation, and periodic keep-alive independent of network availability.
+- Normal controller UART frames, CRC, state decoding, boot confirmation, and periodic keep-alive independent of network availability.
 - Local authenticated HTTP reads and settings writes for mode, working window, heating curves, clock, and identification.
 - Explicit asynchronous operation results, bounded inputs, controller freshness checks, and no automatic retry of an uncertain settings write.
 - No controller flashing, firmware upload endpoints, ROM-loader driver, or recovery-system disablement.
-- MQTT is deferred. The protocol library is independent of the HTTP/network layer so another transport can be added later.
+- Optional MQTT 3.1.1 (numeric broker IP, disabled by default) shares the controller queue with HTTP; see [../docs/DOCUMENTATION.md#mqtt-interface](../docs/DOCUMENTATION.md#mqtt-interface). It is covered by native tests and a host-side Mosquitto test (`tools/test_firmware.py --live`); no ESP8266 hardware test has been done.
 
 This firmware exposes **configured modes and schedules**. It cannot read a temperature or measured relay state, set the local departure-time slots, or directly command arbitrary on/off with the controller command set reconstructed so far. A mode named `timer` still depends on the unit's local timers. No synthetic switch state is presented as a relay measurement.
 
@@ -34,9 +34,9 @@ The build downloads pinned dependencies on first use: PlatformIO ESP8266 platfor
 
 Build outputs:
 
-- `build/garo-idvn-bridge.bin`: replacement image containing eboot and application.
-- `build/garo-idvn-bridge.json`: SHA-256, source hashes, dependency versions, configuration-presence flag, and integrity checks.
-- `firmware/.pio/build/garo_esp8266/firmware.elf`: symbols and sections for debugging.
+- `build/idvn-bridge.bin`: replacement image containing eboot and application.
+- `build/idvn-bridge.json`: SHA-256, source hashes, dependency versions, configuration-presence flag, and integrity checks.
+- `firmware/.pio/build/idvn_esp8266/firmware.elf`: symbols and sections for debugging.
 
 `tools/build_firmware.py` only builds, verifies, and exports. It never uploads. Its integrity verifier accounts for Arduino 3's CRC32 metadata written after the ordinary application XOR checksum; treating the new image exactly like the stock Arduino 2.4.0 image would report a misleading XOR failure. Do not manually “repair” the finished application's XOR byte: that changes its full-image CRC32.
 
@@ -48,7 +48,7 @@ With blank configuration the image starts no AP, makes no configured station con
 
 UART0: 115200, 8N1, GPIO1 TX / GPIO3 RX. Runtime logs must never be printed to `Serial`; this implementation has none. The ESP ROM boot banner cannot be removed by suppressing application logs.
 
-Stock startup writes GPIO5 low and GPIO4 high, then configures them as outputs. The replacement preserves those idle levels and never pulses a controller reset or enters its bootloader. The physical nets still need confirmation. `GARO_IDLE_GPIO4` and `GARO_IDLE_GPIO5` are board-qualification settings, not ordinary user controls.
+Stock startup writes GPIO5 low and GPIO4 high, then configures them as outputs. The replacement preserves those idle levels and never pulses a controller reset or enters its bootloader. The physical nets still need confirmation. `IDVN_IDLE_GPIO4` and `IDVN_IDLE_GPIO5` are board-qualification settings, not ordinary user controls.
 
 The bridge sends startup confirmation (0x01) at boot and every 10 seconds, and reads configuration (0x28) every 15 seconds. It will continue doing so without a router, DHCP lease, HTTP client, or MQTT broker. Controller settings writes are allowed only after a confirmation and a fresh snapshot. Cached state expires after 45 seconds.
 
@@ -84,7 +84,7 @@ Mode 0=departure, 1=reduction, 2=timer. Period 0=60 minutes, 1=30, 2=15. Curves 
 
 ## Client examples
 
-The Python helper needs only the standard library. It polls operation results and exits unsuccessfully for rejected/uncertain writes. Set `GARO_URL` and `GARO_API_TOKEN` in the environment, then:
+The Python helper needs only the standard library. It polls operation results and exits unsuccessfully for rejected/uncertain writes. Set `IDVN_URL` and `IDVN_API_TOKEN` in the environment, then:
 
 ```sh
 python3 tools/idvn.py status

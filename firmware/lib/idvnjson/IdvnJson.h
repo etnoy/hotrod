@@ -1,7 +1,7 @@
 #pragma once
 #include <ArduinoJson.h>
-#include "GaroProtocol.h"
+#include "IdvnProtocol.h"
 
-namespace garo {
+namespace idvn {
 bool encodeSettingsJson(uint8_t command, JsonVariantConst json, uint8_t* output, size_t& length);
 }

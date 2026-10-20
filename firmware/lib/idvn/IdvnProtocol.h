@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace garo {
+namespace idvn {
 constexpr size_t kMaxPayload = 128;
 constexpr size_t kMaxFrame = kMaxPayload + 5;
 constexpr uint32_t kFrameGapMs = 100;
@@ -104,4 +104,4 @@ class Controller {
   bool quiet_ = false;
   uint32_t sentAt_ = 0, heartbeatAt_ = 0, pollAt_ = 0, stateAt_ = 0, quietAt_ = 0;
 };
-}  // namespace garo
+}  // namespace idvn

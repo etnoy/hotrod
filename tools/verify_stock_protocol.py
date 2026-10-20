@@ -50,8 +50,8 @@ def main():
         raise ValueError('Unexpected stock firmware input')
     build=ROOT/'build'; build.mkdir(exist_ok=True)
     subprocess.run(['clang++','-std=c++11','-Wall','-Wextra','-Werror',
-        '-I'+str(ROOT/'firmware/lib/garo'),str(ROOT/'tests/frame_encoder.cpp'),
-        str(ROOT/'firmware/lib/garo/GaroProtocol.cpp'),'-o',str(build/'frame_encoder')],check=True)
+        '-I'+str(ROOT/'firmware/lib/idvn'),str(ROOT/'tests/frame_encoder.cpp'),
+        str(ROOT/'firmware/lib/idvn/IdvnProtocol.cpp'),'-o',str(build/'frame_encoder')],check=True)
     cases=[(1,b''),(0x11,b''),(0x13,b''),(0x28,b''),
            (0x21,bytes([2,1,3,2])),(0x15,bytes([26,10,25,7,6,30,0]))]
     rng=random.Random(0x1d7)

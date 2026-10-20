@@ -1,13 +1,14 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
-#include "GaroProtocol.h"
-#include "GaroJson.h"
+#include "IdvnProtocol.h"
+#include "IdvnJson.h"
 #include "settings.h"
 #include "TinyHttpServer.h"
+#include "MqttBridge.h"
 
 namespace {
-constexpr const char* kVersion = "0.1.0-dev";
+constexpr const char* kVersion = "0.2.0-dev";
 void dispatchHttp();
 TinyHttpServer server(80,dispatchHttp);
 StaticJsonDocument<4096> response;
@@ -16,7 +17,7 @@ uint32_t lastWifiAttempt = 0;
 bool sendSerial(const uint8_t* bytes, size_t length, void*) {
   return Serial.write(bytes, length) == length;
 }
-garo::Controller controller(sendSerial, nullptr);
+idvn::Controller controller(sendSerial, nullptr);
 
 void serviceController() {
   const uint32_t now = millis();
@@ -25,6 +26,7 @@ void serviceController() {
     controller.receive(static_cast<uint8_t>(Serial.read()), now);
   controller.tick(now);
 }
+MqttBridge mqttBridge(controller,serviceController);
 
 void sendResponse(int status) {
   if (response.overflowed()) {
@@ -42,11 +44,11 @@ void error(int status, const char* message) {
 }
 
 bool authenticated() {
-  if (sizeof(GARO_API_TOKEN) == 1) {
+  if (sizeof(IDVN_API_TOKEN) == 1) {
     error(503, "api_token_not_configured"); return false;
   }
   const String supplied = server.header("Authorization");
-  const String expected = String("Bearer ") + GARO_API_TOKEN;
+  const String expected = String("Bearer ") + IDVN_API_TOKEN;
   if (supplied.length() != expected.length()) {
     error(401, "unauthorized"); return false;
   }
@@ -60,18 +62,19 @@ void jobJson(JsonObject object) {
   const auto& job = controller.job();
   object["id"] = job.id;
   object["command"] = job.command;
-  object["status"] = garo::jobStatusName(job.status);
-  if (job.status == garo::JobStatus::Rejected) object["controller_error"] = job.controllerError;
+  object["status"] = idvn::jobStatusName(job.status);
+  if (job.status == idvn::JobStatus::Rejected) object["controller_error"] = job.controllerError;
 }
 
 void health() {
   response.clear();
-  response["firmware"] = "garo-idvn-bridge"; response["version"] = kVersion;
+  response["firmware"] = "idvn-bridge"; response["version"] = kVersion;
   response["uptime_ms"] = millis();
   response["wifi_connected"] = WiFi.status() == WL_CONNECTED;
   response["controller_online"] = controller.online(millis());
   response["controller_confirmed"] = controller.confirmed();
-  response["configured"] = sizeof(GARO_WIFI_SSID) > 1 && sizeof(GARO_API_TOKEN) > 1;
+  response["mqtt_connected"] = mqttBridge.connected();
+  response["configured"] = sizeof(IDVN_WIFI_SSID) > 1 && sizeof(IDVN_API_TOKEN) > 1;
   sendResponse(200);
 }
 
@@ -92,49 +95,19 @@ void status() {
   jobJson(response.createNestedObject("operation")); sendResponse(200);
 }
 
-void curveJson(JsonObject object, const garo::Curve& curve) {
-  auto points = object.createNestedArray("points");
-  for (uint8_t i = 0; i < curve.count; ++i) {
-    auto point = points.createNestedArray();
-    point.add(static_cast<int>(curve.points[i].temperature)); point.add(curve.points[i].minutes);
-  }
-}
-
 void data() {
   if (!authenticated()) return;
   if (!controller.online(millis())) { error(503, "controller_state_unavailable_or_stale"); return; }
-  const auto& s = controller.state();
-  response.clear(); response["state_age_ms"] = controller.stateAge(millis());
-  auto mode = response.createNestedObject("mode");
-  mode["left"] = s.mode.left; mode["right"] = s.mode.right;
-  mode["timers"] = s.mode.timers; mode["period"] = s.mode.period;
-  auto working = response.createNestedObject("working"); working["days"] = s.working.days;
-  auto fromTime = working.createNestedObject("fromTime");
-  fromTime["hours"] = s.working.fromHours; fromTime["minutes"] = s.working.fromMinutes;
-  auto toTime = working.createNestedObject("toTime");
-  toTime["hours"] = s.working.toHours; toTime["minutes"] = s.working.toMinutes;
-  auto fromDate = working.createNestedObject("fromDate");
-  fromDate["month"] = s.working.fromMonth; fromDate["day"] = s.working.fromDay;
-  auto toDate = working.createNestedObject("toDate");
-  toDate["month"] = s.working.toMonth; toDate["day"] = s.working.toDay;
-  curveJson(response.createNestedObject("departure"), s.departure);
-  curveJson(response.createNestedObject("reduction"), s.reduction);
-  auto time = response.createNestedObject("time");
-  time["year"] = s.time.year; time["month"] = s.time.month; time["day"] = s.time.day;
-  time["weekDay"] = s.time.weekDay; time["hours"] = s.time.hours;
-  time["minutes"] = s.time.minutes; time["seconds"] = s.time.seconds;
-  auto version = response.createNestedObject("version");
-  version["hardware"] = s.hardwareVersion; version["controller"] = s.controllerVersion;
-  version["bridge"] = kVersion;
-  auto storage = response.createNestedObject("controller_storage");
-  storage["capacity_exponent"] = s.storageExponent; storage["free_kib"] = s.freeKiB;
+  idvn::stateJson(response.to<JsonObject>(), controller.state());
+  response["state_age_ms"] = controller.stateAge(millis());
+  response["version"]["bridge"] = kVersion;
   sendResponse(200);
 }
 
 void submit(uint8_t command) {
   if (!authenticated()) return;
   uint8_t bytes[32]; size_t length=0;
-  if (command != garo::Identify) {
+  if (command != idvn::Identify) {
     if (server.header("Content-Type") != "application/json" &&
         !server.header("Content-Type").startsWith("application/json;")) {
       error(415,"application_json_required"); return;
@@ -143,11 +116,12 @@ void submit(uint8_t command) {
     if (body.length()>1024) { error(413,"request_too_large"); return; }
     StaticJsonDocument<1536> document;
     const auto result=deserializeJson(document,body,DeserializationOption::NestingLimit(4));
-    if (result || !garo::encodeSettingsJson(command,document.as<JsonVariantConst>(),bytes,length)) {
+    if (result || !idvn::encodeSettingsJson(command,document.as<JsonVariantConst>(),bytes,length)) {
       error(400,"invalid_or_incomplete_settings"); return;
     }
   }
   serviceController();
+  mqttBridge.syncJob();
   if (!controller.online(millis()) || !controller.confirmed()) {
     error(503,"controller_not_ready"); return;
   }
@@ -178,25 +152,25 @@ void dispatchHttp() {
   else if (get && !strcmp(path,"/v1/status")) status();
   else if (get && !strcmp(path,"/v1/data")) data();
   else if (get && !strcmp(path,"/v1/operation")) operation();
-  else if (!get && !strcmp(path,"/v1/mode")) submit(garo::SetMode);
-  else if (!get && !strcmp(path,"/v1/working")) submit(garo::SetWorking);
-  else if (!get && !strcmp(path,"/v1/time")) submit(garo::SetTime);
-  else if (!get && !strcmp(path,"/v1/departure")) submit(garo::SetDeparture);
-  else if (!get && !strcmp(path,"/v1/reduction")) submit(garo::SetReduction);
-  else if (!get && !strcmp(path,"/v1/identify")) submit(garo::Identify);
+  else if (!get && !strcmp(path,"/v1/mode")) submit(idvn::SetMode);
+  else if (!get && !strcmp(path,"/v1/working")) submit(idvn::SetWorking);
+  else if (!get && !strcmp(path,"/v1/time")) submit(idvn::SetTime);
+  else if (!get && !strcmp(path,"/v1/departure")) submit(idvn::SetDeparture);
+  else if (!get && !strcmp(path,"/v1/reduction")) submit(idvn::SetReduction);
+  else if (!get && !strcmp(path,"/v1/identify")) submit(idvn::Identify);
   else error(404,"not_found");
 }
 
 void connectWifi(uint32_t now) {
   lastWifiAttempt=now;
-  if (sizeof(GARO_WIFI_SSID)>1) WiFi.begin(GARO_WIFI_SSID,GARO_WIFI_PASSWORD);
+  if (sizeof(IDVN_WIFI_SSID)>1) WiFi.begin(IDVN_WIFI_SSID,IDVN_WIFI_PASSWORD);
 }
 }  // namespace
 
 void setup() {
   // Set output latches before enabling drivers. Matches the stock idle levels.
-  digitalWrite(5,GARO_IDLE_GPIO5?HIGH:LOW); pinMode(5,OUTPUT);
-  digitalWrite(4,GARO_IDLE_GPIO4?HIGH:LOW); pinMode(4,OUTPUT);
+  digitalWrite(5,IDVN_IDLE_GPIO5?HIGH:LOW); pinMode(5,OUTPUT);
+  digitalWrite(4,IDVN_IDLE_GPIO4?HIGH:LOW); pinMode(4,OUTPUT);
   Serial.setRxBufferSize(512);
   Serial.begin(115200,SERIAL_8N1);
   Serial.setDebugOutput(false);
@@ -204,13 +178,16 @@ void setup() {
   controller.begin(millis()); serviceController();
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
-  WiFi.hostname(GARO_HOSTNAME);
+  WiFi.hostname(IDVN_HOSTNAME);
   WiFi.setAutoReconnect(true);
-  if (sizeof(GARO_WIFI_SSID)==1) WiFi.disconnect();
+  if (sizeof(IDVN_WIFI_SSID)==1) WiFi.disconnect();
   connectWifi(millis()); server.begin();
+  mqttBridge.begin();
 }
 
 void loop() {
+  serviceController();
+  mqttBridge.tick();
   serviceController();
   server.handleClient();
   serviceController();

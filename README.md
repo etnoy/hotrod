@@ -1,10 +1,10 @@
-# Hotrod: A custom firmware for Garo IDVN
+# Hotrod: Custom firmware for Garo IDVN
 
 Garo IDVN is a **motorvärmare** or an electric engine preheater used to warm a parked vehicle before driving in cold weather. In the Nordic countries cars are often equipped with mains-powered engine block and interior heaters that connect to a timered outlet. You choose a departure time on the outlet and when you get to your car the next morning the car is nice and warm, no need to scrape ice and the engine is prewarmed.
 
 The **GARO IDVN** is the outlet controller supplying the vehicle's heater equipment. It has two separately controlled outlets and supports departure, maintenance-heating, and timer modes. Departure heating uses an outdoor-temperature curve to determine when power should start. See [GARO's product overview](https://www.garo.se/storage/450C4FF9CC87E13B3BE03FCC457D65DF1A9F667B94AB51EA881D33F796482D54/1bb66bdfcdf44b60913e4e75939b37fc/pdf/media/30970599720e4aacab5474d57646fdde/Utvalt.pdf) and [IDVN instructions](https://www.garo.se/storage/EB9CB181E178D6216F6DEEDD89832E1E4AB5AB3A4325E20995DAF007E2F92FF9/d28193d8d89746b0b5edae8f0c835d59/pdf/media/a18c98d5f0944b7184dd4f50a1a73423/Monteringsanvisning%20%28SE-FI%29%20IDVN%20380229-1.pdf) for the manufacturer's operating instructions.
 
-This project replaces the IDVN's **ESP8266 Wi-Fi firmware** so it can join an existing home network and expose the controller's settings to local home automation. The original STM32 firmware continues to manage the heater. MQTT is planned for a later stage; the first version uses a small authenticated HTTP API.
+This project replaces the IDVN's **ESP8266 Wi-Fi firmware** so it can join an existing home network and expose the controller's settings to local home automation. The original STM32 firmware continues to manage the heater. It offers a small authenticated HTTP API and an optional MQTT interface for settings and configured state ([docs/DOCUMENTATION.md#mqtt-interface](docs/DOCUMENTATION.md#mqtt-interface)); neither can set departure times, start heating now, or read measured temperature, because the stock controller protocol does not provide them.
 
 This is an unofficial project, with no GARO affiliation or endorsement. **Development status: compiled and tested offline, but not yet tested on an appliance.** Board wiring, programming access, and recovery still require physical validation.
 
@@ -37,7 +37,7 @@ The replacement firmware builds without the original APK or stock firmware.
    cp -n firmware/include/local_config.h.example firmware/include/local_config.h
    ```
 
-   Edit `firmware/include/local_config.h` and set `GARO_WIFI_SSID`, `GARO_WIFI_PASSWORD`, and a unique `GARO_API_TOKEN` of 24–128 bytes. Use a compatible 2.4 GHz Wi-Fi network. The configuration file and build outputs are ignored by Git. Credentials are embedded in the resulting binary, so keep configured images private.
+   Edit `firmware/include/local_config.h` and set `IDVN_WIFI_SSID`, `IDVN_WIFI_PASSWORD`, and a unique `IDVN_API_TOKEN` of 24–128 bytes. Use a compatible 2.4 GHz Wi-Fi network. The configuration file and build outputs are ignored by Git. Credentials are embedded in the resulting binary, so keep configured images private.
 
    GPIO4/GPIO5 idle levels are board settings: verify their wiring before changing them. With no configured SSID/token, the image is an unconfigured development build. It does not offer a fallback AP or network credential editor.
 
@@ -50,9 +50,9 @@ The replacement firmware builds without the original APK or stock firmware.
 
    The build pins ESP8266 platform 4.2.1, Arduino core 3.1.2, and ArduinoJson 6.21.5. It checks image integrity and exports:
 
-   - `build/garo-idvn-bridge.bin`: combined ESP8266 bootloader/application image.
-   - `build/garo-idvn-bridge.json`: image hash, source manifest, dependency versions, and integrity results.
-   - `firmware/.pio/build/garo_esp8266/firmware.elf`: executable with symbols for debugging.
+   - `build/idvn-bridge.bin`: combined ESP8266 bootloader/application image.
+   - `build/idvn-bridge.json`: image hash, source manifest, dependency versions, and integrity results.
+   - `firmware/.pio/build/idvn_esp8266/firmware.elf`: executable with symbols for debugging.
 
 The build tool never flashes hardware. Native tests cover framing, controller lifecycle, settings validation, and bounded HTTP input. Separately, 136 generated frames matched the original STM32 encoder byte for byte; this verifies the frame format, not operation on the physical heater.
 
@@ -110,12 +110,12 @@ analysis/.venv/bin/python "$IDVN_ESPTOOL" \
   --chip esp8266 --port "$IDVN_PORT" --baud 115200 \
   --before no_reset --after no_reset \
   write_flash --flash_mode keep --flash_freq keep --flash_size keep \
-  0x000000 build/garo-idvn-bridge.bin
+  0x000000 build/idvn-bridge.bin
 
 analysis/.venv/bin/python "$IDVN_ESPTOOL" \
   --chip esp8266 --port "$IDVN_PORT" --baud 115200 \
   --before no_reset --after no_reset \
-  verify_flash 0x000000 build/garo-idvn-bridge.bin
+  verify_flash 0x000000 build/idvn-bridge.bin
 ```
 
 This procedure does not request a whole-chip erase. Do not add `--erase-all` or run `erase_flash`; preserve the remaining flash contents and your full backup. Do not use the stock app's firmware-update endpoints for this development image. The commands target only the ESP8266; this project does not program the STM32 or change its option bytes.
@@ -127,8 +127,8 @@ Power down the bench setup, release GPIO0 to its normal high state, and restore 
 Set the bridge's LAN address and the same API token configured in the image, then use read-only checks first:
 
 ```sh
-export GARO_URL=http://192.168.1.80
-export GARO_API_TOKEN='replace-with-your-configured-token'
+export IDVN_URL=http://192.168.1.80
+export IDVN_API_TOKEN='replace-with-your-configured-token'
 
 python3 tools/idvn.py status
 python3 tools/idvn.py data
@@ -136,7 +136,7 @@ python3 tools/idvn.py data
 
 Check controller confirmation, fresh data, and UART errors. Observe the unit for several 90-second recovery intervals, test loss/restoration of Wi-Fi, and confirm that the controller does not restore stock ESP firmware. Only then test individual settings changes against the unit's display and a suitable test load. Hardware validation is still required before unattended heater operation.
 
-The DHCP hostname defaults to `garo-idvn`; mDNS discovery is not implemented. The stock Android app's fixed address is not used by this bridge. The API reference, clock-sync command, and automation examples are in [firmware/README.md](firmware/README.md).
+The DHCP hostname defaults to `idvn`; mDNS discovery is not implemented. The stock Android app's fixed address is not used by this bridge. The API reference, clock-sync command, and automation examples are in [firmware/README.md](firmware/README.md).
 
 ### Restore the full backup
 
@@ -159,8 +159,8 @@ Restore normal boot straps and wiring as above. The controller's apparent automa
 
 ## Research and repository contents
 
-- [Investigation notebook](docs/FIRMWARE-NOTES.md): evidence, addresses, hypotheses, and progress.
-- [Protocol specification](docs/GARO-PROTOCOL.md): frame format, payload layouts, and remaining uncertainties.
+- [Investigation notebook](docs/DOCUMENTATION.md#firmware-investigation-notebook): evidence, addresses, hypotheses, and progress.
+- [Protocol specification](docs/DOCUMENTATION.md#controller-protocol): frame format, payload layouts, and remaining uncertainties.
 - [Firmware documentation](firmware/README.md): API, configuration, architecture, and validation.
 - [Home Assistant example](examples/home-assistant.yaml): optional local REST integration.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only GARO image inspection and focused disassembly. No device I/O."""
+"""Read-only controller image inspection and focused disassembly. No device I/O."""
 import argparse
 import binascii
 import hashlib

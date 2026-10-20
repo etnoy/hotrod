@@ -1,0 +1,57 @@
+# Optional MQTT fragment; merge into your configuration. Prefix hotrod/idvn.
+# Only configured state is exposed: the controller provides no measured temperature,
+# relay state, departure time or start-now (see docs/DOCUMENTATION.md#mqtt-interface).
+# Commands need the per-connection "session" from the state topic and an increasing
+# id, so send them from an automation/script that reads the latest state, e.g.:
+#   session: {{ states('sensor.idvn_session') }}
+#   id: {{ (as_timestamp(now()) | int) }}   # must exceed earlier IDs for this connection
+
+mqtt:
+  binary_sensor:
+    - name: IDVN bridge connected
+      unique_id: idvn_bridge_connected
+      state_topic: hotrod/idvn/availability
+      payload_on: online
+      payload_off: offline
+      device_class: connectivity
+    - name: IDVN controller online
+      unique_id: idvn_controller_online
+      state_topic: hotrod/idvn/state
+      availability_topic: hotrod/idvn/availability
+      value_template: "{{ value_json.controller_online }}"
+      payload_on: "True"
+      payload_off: "False"
+  sensor:
+    - name: IDVN session
+      unique_id: idvn_session
+      state_topic: hotrod/idvn/state
+      availability_topic: hotrod/idvn/availability
+      value_template: "{{ value_json.session }}"
+      entity_category: diagnostic
+    - name: IDVN left configured mode
+      unique_id: idvn_mqtt_left_mode
+      state_topic: hotrod/idvn/state
+      availability_topic: hotrod/idvn/availability
+      value_template: >-
+        {% if value_json.data is none %}unavailable
+        {% else %}{{ ['departure', 'reduction', 'timer'][value_json.data.mode.left] }}{% endif %}
+      json_attributes_topic: hotrod/idvn/state
+      json_attributes_template: "{{ value_json.data | tojson if value_json.data else '{}' }}"
+
+script:
+  idvn_mqtt_set_mode:
+    alias: IDVN set mode over MQTT
+    fields:
+      payload:
+        description: 'Complete mode object, e.g. {"left":0,"right":2,"timers":1,"period":0}'
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: hotrod/idvn/command
+          qos: 1
+          retain: false
+          payload: >-
+            {{ {'session': states('sensor.idvn_session'),
+                'id': as_timestamp(now()) | int,
+                'command': 'mode',
+                'value': payload} | tojson }}

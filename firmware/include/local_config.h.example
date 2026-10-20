@@ -2,11 +2,20 @@
 
 // Copy to local_config.h (ignored by Git). These values are embedded in the image.
 // Use a dedicated 2.4 GHz network. No AP or provisioning portal is started.
-#define GARO_WIFI_SSID "your-network"
-#define GARO_WIFI_PASSWORD "your-network-password"
-#define GARO_API_TOKEN "replace-with-a-long-random-local-api-token"
-#define GARO_HOSTNAME "garo-idvn"
+#define IDVN_WIFI_SSID "your-network"
+#define IDVN_WIFI_PASSWORD "your-network-password"
+#define IDVN_API_TOKEN "replace-with-a-long-random-local-api-token"
+#define IDVN_HOSTNAME "idvn"
+
+// Optional local MQTT 3.1.1 broker. Empty IP disables MQTT. Numeric IPv4 only.
+// Plain TCP: use a trusted LAN and broker ACLs; do not expose to the internet.
+#define IDVN_MQTT_IP ""
+#define IDVN_MQTT_PORT 1883
+#define IDVN_MQTT_USER ""
+#define IDVN_MQTT_PASSWORD ""
+// Give each unit a unique prefix; do not use MQTT wildcards (+ or #).
+#define IDVN_MQTT_PREFIX "hotrod/idvn"
 
 // Stock startup drives GPIO4 high and GPIO5 low. Verify the board wiring first.
-#define GARO_IDLE_GPIO4 1
-#define GARO_IDLE_GPIO5 0
+#define IDVN_IDLE_GPIO4 1
+#define IDVN_IDLE_GPIO5 0

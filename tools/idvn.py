@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Local HTTP client for the replacement bridge (not the stock APK/API).
 
-GARO_URL=http://device-address GARO_API_TOKEN=... python3 tools/idvn.py status
+IDVN_URL=http://device-address IDVN_API_TOKEN=... python3 tools/idvn.py status
 """
 import argparse
 from datetime import datetime
@@ -57,13 +57,13 @@ def main():
     for command in ['working','departure','reduction']:
         sub.add_parser(command).add_argument('json_file',type=Path)
     args=parser.parse_args()
-    base=os.environ.get('GARO_URL','').rstrip('/')
-    token=os.environ.get('GARO_API_TOKEN','')
+    base=os.environ.get('IDVN_URL','').rstrip('/')
+    token=os.environ.get('IDVN_API_TOKEN','')
     parsed=urlparse(base)
     if parsed.scheme not in ['http','https'] or not parsed.netloc or parsed.query or parsed.fragment or parsed.username:
-        parser.error('Set GARO_URL to the bridge URL, for example http://192.168.1.80')
+        parser.error('Set IDVN_URL to the bridge URL, for example http://192.168.1.80')
     if not token:
-        parser.error('Set GARO_API_TOKEN to the configured local API token')
+        parser.error('Set IDVN_API_TOKEN to the configured local API token')
     body=None; endpoint=args.command
     if args.command=='mode':
         body={'left':modes[args.left],'right':modes[args.right],'timers':args.timers,
