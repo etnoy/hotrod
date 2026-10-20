@@ -1,6 +1,6 @@
-# GARO IDVN bridge
+# Hotrod: A custom firmware for Garo IDVN
 
-Garo IDVN is a **motorvärmare** or an electric engine preheater used to warm a parked vehicle before driving in cold weather. The vehicle connects to a mains outlet through its heater cable; a compatible cabin heater can warm the interior as well. Drivers typically choose a departure time so heating takes place before they leave.
+Garo IDVN is a **motorvärmare** or an electric engine preheater used to warm a parked vehicle before driving in cold weather. In the Nordic countries cars are often equipped with mains-powered engine block and interior heaters that connect to a timered outlet. You choose a departure time on the outlet and when you get to your car the next morning the car is nice and warm, no need to scrape ice and the engine is prewarmed.
 
 The **GARO IDVN** is the outlet controller supplying the vehicle's heater equipment. It has two separately controlled outlets and supports departure, maintenance-heating, and timer modes. Departure heating uses an outdoor-temperature curve to determine when power should start. See [GARO's product overview](https://www.garo.se/storage/450C4FF9CC87E13B3BE03FCC457D65DF1A9F667B94AB51EA881D33F796482D54/1bb66bdfcdf44b60913e4e75939b37fc/pdf/media/30970599720e4aacab5474d57646fdde/Utvalt.pdf) and [IDVN instructions](https://www.garo.se/storage/EB9CB181E178D6216F6DEEDD89832E1E4AB5AB3A4325E20995DAF007E2F92FF9/d28193d8d89746b0b5edae8f0c835d59/pdf/media/a18c98d5f0944b7184dd4f50a1a73423/Monteringsanvisning%20%28SE-FI%29%20IDVN%20380229-1.pdf) for the manufacturer's operating instructions.
 
