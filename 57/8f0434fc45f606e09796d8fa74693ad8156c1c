@@ -1,0 +1,99 @@
+README.md
+  s_e08fe73b805c60::t_27cfecafc5197a 1,7,40,53-55,113,118,130-131,139,162-163
+docs/DOCUMENTATION.md
+  s_e08fe73b805c60::t_535efec054c9b8 1,3,5-270,278,292,299,310,318,324,349,372,392,409,420,432,436,456,485,493,505,507,519,544,550,552,564,583,591,593,595,610,639,647,658,660,666,678,686,696,699-785
+examples/home-assistant-mqtt.yaml
+  s_e08fe73b805c60::t_e3280764627377 1-57
+examples/home-assistant.yaml
+  s_e08fe73b805c60::t_0325c5db3ce862 4-7,11-13,15,29-30,33,40-41,44
+firmware/README.md
+  s_e08fe73b805c60::t_899ef66d42bf5f 1,10,14,37-39,51,87
+firmware/include/MqttBridge.h
+  s_e08fe73b805c60::t_d8126e6de40372 1-43
+firmware/include/local_config.h.example
+  s_e08fe73b805c60::t_fda914aa94e088 5-17,20-21
+firmware/include/settings.h
+  s_e08fe73b805c60::t_40051bd1ab5d8a 5-6,8-9,11-12,14-15,17-18,20-21,23-48,50,52-53,55-56
+firmware/lib/idvn/IdvnProtocol.cpp
+  s_e08fe73b805c60::t_3bb703bca2993d 1,4,272
+firmware/lib/idvn/IdvnProtocol.h
+  s_e08fe73b805c60::t_7ba84466a00687 5,107
+firmware/lib/idvnjson/IdvnJson.cpp
+  s_e08fe73b805c60::t_802b4c58582765 1,3,20-21,23,25-26,30,32-33,39,41,45,50,53,59
+firmware/lib/idvnjson/IdvnJson.h
+  s_e08fe73b805c60::t_00d9c4fc544e3a 3,5
+firmware/lib/idvnjson/MqttCommand.cpp
+  s_e08fe73b805c60::t_6765761f09a466 1-73
+firmware/lib/idvnjson/MqttCommand.h
+  s_e08fe73b805c60::t_0a24bb164b7fe5 1-24
+firmware/platformio.ini
+  s_e08fe73b805c60::t_f095ce9a70309f 2,4
+firmware/src/MqttBridge.cpp
+  s_e08fe73b805c60::t_f0bb55a8cf2434 1-158
+firmware/src/main.cpp
+  s_e08fe73b805c60::t_0cfb0e458745b8 4-5,8,11,20,29,47,51,65-66,71,76-77,101-103,110,119,124,155-160,166,172-173,181,183,185,189-190
+tests/frame_encoder.cpp
+  s_e08fe73b805c60::t_2d964c7e5e1ae2 2,11-12,15-16
+tests/json_settings_test.cpp
+  s_e08fe73b805c60::t_1e32f22e144869 1,10,15,27-28,30-31,33-37,40,43
+tests/mqtt_bridge_test.cpp
+  s_e08fe73b805c60::t_aa3a8a71c8f7a8 1-96
+tests/mqtt_live/Arduino.h
+  s_e08fe73b805c60::t_328eb7c6cdd1e9 1-25
+tests/mqtt_live/ESP8266WiFi.h
+  s_e08fe73b805c60::t_bf9c0b63529565 1-58
+tests/mqtt_live/live_bridge.cpp
+  s_e08fe73b805c60::t_c4401f0cf92600 1-30
+tests/mqtt_live/run_live.py
+  s_e08fe73b805c60::t_47bca7b9744246 1-109
+tests/mqtt_live/user_interface.h
+  s_e08fe73b805c60::t_4a851c099f135b 1-4
+tests/mqtt_test.cpp
+  s_e08fe73b805c60::t_4c2c671e904dcc 1-113
+tests/protocol_test.cpp
+  s_e08fe73b805c60::t_2eb7a3d2001758 1,7
+tools/build_firmware.py
+  s_e08fe73b805c60::t_d71c61579f3159 48,52,62
+tools/firmware_inspect.py
+  s_e08fe73b805c60::t_d760e0c8c48162 2
+tools/idvn.py
+  s_e08fe73b805c60::t_ee0017f69d9692 4,60-61,64,66
+tools/test_firmware.py
+  s_e08fe73b805c60::t_a68ae8fb630ce9 6,13-14,22,27-29,31-61
+tools/verify_stock_protocol.py
+  s_e08fe73b805c60::t_4f1b7fe3033de5 53-54
+firmware/lib/mqtt/MqttWire.cpp
+  s_ce6dd3b1a00611::t_1c2a674e5186c8 1-104
+firmware/lib/mqtt/MqttWire.h
+  s_ce6dd3b1a00611::t_cd7c86b8f43e2a 1-49
+tests/mqtt_fakes/Arduino.h
+  s_ce6dd3b1a00611::t_dcb9f88f7c97f7 1-22
+tests/mqtt_fakes/ESP8266WiFi.h
+  s_ce6dd3b1a00611::t_7dfd18d6aac705 1-26
+tests/mqtt_fakes/user_interface.h
+  s_ce6dd3b1a00611::t_921ea8892e6e0a 1-3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "578f0434fc45f606e09796d8fa74693ad8156c1c",
+  "prompts": {},
+  "sessions": {
+    "s_ce6dd3b1a00611": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1582e-7cdf-7982-ae94-a09dd5c00998",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_e08fe73b805c60": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "0fa866ba-7e8a-47e6-85a1-bbadd2d32964",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
