@@ -1,0 +1,19 @@
+README.md
+  s_66d22cbcadf4db::t_95fed8af5937ec 61,163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "89bcb1ef37a05bf8cdab50f8922674445e1d0d8b",
+  "prompts": {},
+  "sessions": {
+    "s_66d22cbcadf4db": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15aef-b15b-78e3-849c-75989a2bdc03",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
